@@ -1,0 +1,51 @@
+plugins {
+    id 'com.android.application'
+}
+
+// The release signing key is supplied by the build environment (see .github/workflows/build.yml) and is
+// deliberately NOT stored in this public repository. Without it (e.g. a local Android Studio build) the
+// release APK falls back to the standard debug key, which is fine for installing on your own phone.
+def ksPath = System.getenv('ADSHIELD_KEYSTORE')
+
+android {
+    namespace 'app.dj.adshield'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'app.dj.adshield'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+
+    signingConfigs {
+        if (ksPath) {
+            release {
+                storeFile file(ksPath)
+                storePassword System.getenv('ADSHIELD_KS_PASS')
+                keyAlias 'adshield'
+                keyPassword System.getenv('ADSHIELD_KS_PASS')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig ksPath ? signingConfigs.release : signingConfigs.debug
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
+
+// Intentionally NO dependencies: only the Android framework. Nothing third-party ships in the APK.
