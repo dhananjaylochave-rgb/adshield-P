@@ -65,13 +65,16 @@ jobs:
       - name: Build release APK
         run: gradle --no-daemon assembleRelease
 
-      - name: Show APK hash and permissions
+      - name: Report APK hash, permissions and signature
         run: |
           APK=app/build/outputs/apk/release/app-release.apk
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
           ls -l "$APK"
           sha256sum "$APK"
-          AAPT2="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/aapt2"
-          "$AAPT2" dump permissions "$APK" || true
+          echo "::notice title=APK::sha256=$(sha256sum "$APK" | cut -d' ' -f1) bytes=$(stat -c%s "$APK")"
+          echo "::notice title=Permissions::$("$BT/aapt2" dump permissions "$APK" | tr '\n' ';')"
+          echo "::notice title=Badging::$("$BT/aapt2" dump badging "$APK" | grep -E '^(package|sdkVersion|targetSdkVersion)' | tr '\n' ';')"
+          echo "::notice title=Signature::$("$BT/apksigner" verify --print-certs "$APK" 2>&1 | tr '\n' ';')"
 
       - uses: actions/upload-artifact@v4
         with:
